@@ -3,72 +3,87 @@
 # Add steps that analyze code, save build artifacts, deploy, and more:
 # https://docs.microsoft.com/azure/devops/pipelines/languages/java
 
-trigger:
-- main
+jobs:
+- job: Building
+  pool:
+    vmImage: ubuntu-latest
+  displayName: Build
 
-pool:
-  vmImage: ubuntu-latest
+  steps:
 
-steps:
-
-- task: Gradle@2
-  inputs:
-    workingDirectory: ''
-    gradleWrapperFile: 'gradlew'
-    gradleOptions: '-Xmx3072m'
-    javaHomeOption: 'JDKVersion'
-    jdkVersionOption: '1.8'
-    jdkArchitectureOption: 'x64'
-    publishJUnitResults: true
-    testResultsFiles: '**/TEST-*.xml'
-    tasks: 'build'
+  - task: Gradle@2
+    inputs:
+      workingDirectory: ''
+      gradleWrapperFile: 'gradlew'
+      gradleOptions: '-Xmx3072m'
+      javaHomeOption: 'JDKVersion'
+      jdkVersionOption: '1.8'
+      jdkArchitectureOption: 'x64'
+      publishJUnitResults: true
+      testResultsFiles: '**/TEST-*.xml'
+      tasks: 'build'
 
 
-- task: Maven@4
-  inputs:
-    mavenPomFile: 'pom.xml'
-    publishJUnitResults: true
-    testResultsFiles: '**/surefire-reports/TEST-*.xml'
-    codeCoverageToolOption: 'JaCoCo'
-    javaHomeOption: 'JDKVersion'
-    mavenVersionOption: 'Default'
-    mavenAuthenticateFeed: false
-    effectivePomSkip: false
-    sonarQubeRunAnalysis: false
+  - task: Maven@4
+    inputs:
+      mavenPomFile: 'pom.xml'
+      publishJUnitResults: true
+      testResultsFiles: '**/surefire-reports/TEST-*.xml'
+      codeCoverageToolOption: 'JaCoCo'
+      javaHomeOption: 'JDKVersion'
+      mavenVersionOption: 'Default'
+      mavenAuthenticateFeed: false
+      effectivePomSkip: false
+      sonarQubeRunAnalysis: false
 
-- task: SonarCloudPrepare@1
-  inputs:
-    SonarCloud: 'sonarcloud'
-    organization: 'diego-godoy'
-    projectKey: 'diego-godoy_feature-ms-DiegoGodoy-mensaje'
-    projectName: 'feature-ms-DiegoGodoy-mensaje'
-  displayName: 'SonarCloud Prepare'
-    
-- task: Gradle@3
-  inputs:
-    gradleWrapperFile: 'gradlew'
-    tasks: 'sonarqube'
-    publishJUnitResults: true
-    javaHomeOption: 'JDKVersion'
-    sonarQubeRunAnalysis: true
-    sqGradlePluginVersionChoice: 'specify'
-    sonarQubeGradlePluginVersion: '3.3'
-    spotBugsAnalysis: false
+  - task: SonarCloudPrepare@1
+    inputs:
+      SonarCloud: 'sonarcloud'
+      organization: 'diego-godoy'
+      projectKey: 'diego-godoy_feature-ms-DiegoGodoy-mensaje'
+      projectName: 'feature-ms-DiegoGodoy-mensaje'
+    displayName: 'SonarCloud Prepare'
+      
+  - task: Gradle@3
+    inputs:
+      gradleWrapperFile: 'gradlew'
+      tasks: 'sonarqube'
+      publishJUnitResults: true
+      javaHomeOption: 'JDKVersion'
+      sonarQubeRunAnalysis: true
+      sqGradlePluginVersionChoice: 'specify'
+      sonarQubeGradlePluginVersion: '3.3'
+      spotBugsAnalysis: false
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker'
-    command: 'login'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'Docker'
+      command: 'login'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker'
-    repository: 'pzyborg/prueba_azure'
-    command: 'build'
-    Dockerfile: '**/Dockerfile'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'Docker'
+      repository: 'pzyborg/prueba_azure'
+      command: 'build'
+      Dockerfile: '**/Dockerfile'
 
-- task: Docker@2
-  inputs:
-    containerRegistry: 'Docker'
-    repository: 'pzyborg/prueba_azure'
-    command: 'push'
+  - task: Docker@2
+    inputs:
+      containerRegistry: 'Docker'
+      repository: 'pzyborg/prueba_azure'
+      command: 'push'
+
+- job: DeployLoadTesting
+  dependsOn: Building
+  pool: 'default'
+
+  steps:
+  - task: Kubernetes@1
+    inputs:
+      connectionType: 'None'
+      command: 'apply'
+      arguments: '-f deployment app.yaml'
+      secretType: 'dockerRegistry'
+      containerRegistryType: 'Azure Container Registry'
+
+  - script: kubectl port-forward deploy/Test-deployment 8086:8085
