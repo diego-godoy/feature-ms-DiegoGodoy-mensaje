@@ -89,7 +89,7 @@ jobs:
     inputs:
       connectionType: 'None'
       command: 'create'
-      arguments: 'deployment microservice --image=pzyborg/prueba_azure:latest'
+      arguments: 'deployment microservice --image=pzyborg/prueba_azure:30'
       secretType: 'dockerRegistry'
       containerRegistryType: 'Azure Container Registry'
     displayName: 'deploy de la imagen ' 
@@ -97,7 +97,7 @@ jobs:
   - task: PowerShell@2
     inputs:
      targetType: 'inline'
-     script: 'Start-Job -ScriptBlock {kubectl port-forward deployment/Test-deployment 8086:8085};'
+     script: 'Start-Job -ScriptBlock {kubectl port-forward deployment/microservice 8086:8085};'
     displayName: 'Port forward'
 
   
