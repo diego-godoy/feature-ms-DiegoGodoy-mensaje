@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: Test-deployment
+  labels:
+    app: Test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: Test
+  template:
+    metadata:
+      labels:
+        app: Test
+    spec:
+      containers:
+      - name: Test
+        image: pzyborg/prueba_azure:latest
+        ports:
+        - containerPort: 8085
