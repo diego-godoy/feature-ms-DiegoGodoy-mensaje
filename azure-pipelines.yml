@@ -78,12 +78,20 @@ jobs:
   pool: 'default'
 
   steps:
+#  - task: Kubernetes@1
+#    inputs:
+#      connectionType: 'None'
+#      command: 'create'
+#      arguments: '-f deployment_app.yaml'
+#      secretType: 'dockerRegistry'
+#      containerRegistryType: 'Azure Container Registry'
   - task: Kubernetes@1
     inputs:
       connectionType: 'None'
       command: 'create'
-      arguments: '-f deployment_app.yaml'
+      arguments: 'deployment microservice --image=pzyborg/prueba_azure:latest'
       secretType: 'dockerRegistry'
       containerRegistryType: 'Azure Container Registry'
-
+    displayName: 'deploy de la imagen ' 
+    
   - script: kubectl port-forward deploy/Test-deployment 8086:8085
