@@ -81,8 +81,8 @@ jobs:
   - task: Kubernetes@1
     inputs:
       connectionType: 'None'
-      command: 'apply'
-      arguments: '-f deployment app.yaml'
+      command: 'create'
+      arguments: '-f deployment_app.yaml'
       secretType: 'dockerRegistry'
       containerRegistryType: 'Azure Container Registry'
 
