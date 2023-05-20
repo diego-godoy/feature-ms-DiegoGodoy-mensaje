@@ -10,6 +10,7 @@ pool:
   vmImage: ubuntu-latest
 
 steps:
+
 - task: Gradle@2
   inputs:
     workingDirectory: ''
@@ -53,3 +54,21 @@ steps:
     sqGradlePluginVersionChoice: 'specify'
     sonarQubeGradlePluginVersion: '3.3'
     spotBugsAnalysis: false
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'Docker'
+    command: 'login'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'Docker'
+    repository: 'pzyborg/prueba_azure'
+    command: 'build'
+    Dockerfile: '**/Dockerfile'
+
+- task: Docker@2
+  inputs:
+    containerRegistry: 'Docker'
+    repository: 'pzyborg/prueba_azure'
+    command: 'push'
