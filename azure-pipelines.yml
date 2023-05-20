@@ -89,7 +89,7 @@ jobs:
     inputs:
       connectionType: 'None'
       command: 'create'
-      arguments: 'deployment microservice --image=pzyborg/prueba_azure:43'
+      arguments: 'deployment microservice --image=pzyborg/prueba_azure:48'
       secretType: 'dockerRegistry'
       containerRegistryType: 'Azure Container Registry'
     displayName: 'deploy de la imagen ' 
