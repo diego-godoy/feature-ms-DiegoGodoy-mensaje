@@ -111,6 +111,6 @@ jobs:
     inputs:
      targetType: 'inline'
      script: |
-          Start-Process "kubectl" -ArgumentList "port-forward service/lab-service 8080:8080" -WindowStyle Hidden
+          Start-Process "kubectl" -ArgumentList "port-forward deployment/microservice 8080:8080" -WindowStyle Hidden
     displayName: 'kubectl port-forward'
     continueOnError: true
