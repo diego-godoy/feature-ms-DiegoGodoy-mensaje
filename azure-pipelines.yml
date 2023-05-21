@@ -107,6 +107,16 @@ jobs:
 #     targetType: 'inline'
 #     script: 'Start-Job -ScriptBlock {kubectl port-forward deployment/microservice 8080:8080};'
 #    displayName: 'Port forward'
-  - task: CmdLine@2
+  - task: PowerShell@2
     inputs:
-      script: 'kubectl port-forward deployment/microservice 8080:8080'
+      targetType: 'inline'
+      script: |
+        $arguments = "port-forward deployment/microservice 8080:8080"
+        $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processInfo.FileName = "kubectl"
+        $processInfo.Arguments = $arguments
+        $processInfo.RedirectStandardOutput = $true
+        $processInfo.UseShellExecute = $false
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $processInfo
+        $process.Start()
