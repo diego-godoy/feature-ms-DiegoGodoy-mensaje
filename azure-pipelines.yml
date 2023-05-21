@@ -108,3 +108,9 @@ jobs:
      targetType: 'inline'
      script: 'Start-Job -ScriptBlock {kubectl port-forward deployment/microservice 8080:8080};'
     displayName: 'Port forward'
+
+  - task: CmdLine@2
+    inputs:
+          script: |
+              jmeter -n -t test-plan.jmx -l resultados.jtl
+    displayName: 'JMeter'
