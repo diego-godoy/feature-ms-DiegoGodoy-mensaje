@@ -1,83 +1,88 @@
-# Gradle
-# Build your Java project and run tests with Gradle using a Gradle wrapper script.
-# Add steps that analyze code, save build artifacts, deploy, and more:
-# https://docs.microsoft.com/azure/devops/pipelines/languages/java
-
 jobs:
 - job: Building
   pool:
-    vmImage: ubuntu-latest
+    vmImage: 'ubuntu-latest'
   displayName: Build
 
   steps:
-
-  - task: Gradle@2
+  - script: |
+      git fetch --unshallow
+    displayName: 'Convertir a no shallow clone para sonarcube' 
+  - task: Gradle@3
     inputs:
-      workingDirectory: ''
       gradleWrapperFile: 'gradlew'
-      gradleOptions: '-Xmx3072m'
-      javaHomeOption: 'JDKVersion'
-      jdkVersionOption: '1.8'
-      jdkArchitectureOption: 'x64'
+      tasks: 'build'
       publishJUnitResults: true
       testResultsFiles: '**/TEST-*.xml'
-      tasks: 'build'
-
-
-  - task: Maven@4
-    inputs:
-      mavenPomFile: 'pom.xml'
-      publishJUnitResults: true
-      testResultsFiles: '**/surefire-reports/TEST-*.xml'
-      codeCoverageToolOption: 'JaCoCo'
       javaHomeOption: 'JDKVersion'
-      mavenVersionOption: 'Default'
-      mavenAuthenticateFeed: false
-      effectivePomSkip: false
       sonarQubeRunAnalysis: false
+      spotBugsAnalysis: false
+    displayName: Building,test Unitarios y cobertura de los tests
+
+    
+
+  - task: PublishCodeCoverageResults@1
+    inputs:
+        codeCoverageTool: 'JaCoCo'
+        summaryFileLocation: '$(System.DefaultWorkingDirectory)/build/reports/jacoco/test/jacocoTestReport.xml'
+        pathToSources: '$(System.DefaultWorkingDirectory)/src/main/java/'
+        reportDirectory: '$(System.DefaultWorkingDirectory)/build/reports/jacoco/test'
+        failIfCoverageEmpty: true
+    displayName: Publicacion de resultados de jacoco
 
   - task: SonarCloudPrepare@1
     inputs:
-      SonarCloud: 'sonarcloud'
-      organization: 'diego-godoy'
-      projectKey: 'diego-godoy_feature-ms-DiegoGodoy-mensaje'
-      projectName: 'feature-ms-DiegoGodoy-mensaje'
-    displayName: 'SonarCloud Prepare'
-      
+      SonarCloud: 'SONAR-CLOUD'
+      organization: 'devops-fundamental-v4'
+      projectKey: Devops-fundamental-v4_microservicio-spring-1
+      projectName: microservicio-spring-1
+    displayName: 'Conexion a sonar Cloud Api'
   - task: Gradle@3
     inputs:
       gradleWrapperFile: 'gradlew'
       tasks: 'sonarqube'
       publishJUnitResults: true
+      testResultsFiles: 'TEST-*.xml'
       javaHomeOption: 'JDKVersion'
       sonarQubeRunAnalysis: true
       sqGradlePluginVersionChoice: 'specify'
-      sonarQubeGradlePluginVersion: '3.3'
+      sonarQubeGradlePluginVersion: '3.5.0.2730'
       spotBugsAnalysis: false
+    displayName: 'Análisis con sonar del commit'
 
+  - task: sonarcloud-buildbreaker@2
+    inputs:
+      SonarCloud: 'SONAR-CLOUD'
+      organization: 'devops-fundamental-v4'
+    displayName: 'Verificación con el quality gate y su config'
   - task: Docker@2
     inputs:
-      containerRegistry: 'Docker'
+      containerRegistry: 'docker-service'
       command: 'login'
-
+    displayName: 'Login a la cuenta de docker'
   - task: Docker@2
     inputs:
-      containerRegistry: 'Docker'
-      repository: 'pzyborg/prueba_azure'
+      containerRegistry: 'docker-service'
+      repository: 'crisacevedo/microservicio-spring'
       command: 'build'
-      Dockerfile: '**/Dockerfile'
+      Dockerfile: '**/Dockerfile' 
+    displayName: 'Build utilizando el DockerFile del jar hacia la imagen para el registry de Docker'
 
+  
   - task: Docker@2
     inputs:
-      containerRegistry: 'Docker'
-      repository: 'pzyborg/prueba_azure'
+      containerRegistry: 'docker-service'
+      repository: 'crisacevedo/microservicio-spring'
       command: 'push'
+    displayName: '´Push de la imagen al repository de docker crisacevedo/microservicio-spring'
 
-- job: Deploy
+- job: DeployLoadTesting
+  
   dependsOn: Building
-  pool: 'default'
-
+  pool:
+    'default'
   steps:
+  
   - task: Kubernetes@1
     inputs:
       connectionType: 'None'
@@ -86,9 +91,9 @@ jobs:
       secretType: 'dockerRegistry'
       containerRegistryType: 'Azure Container Registry'
     displayName: 'deploy de la imagen ' 
-
   - task: PowerShell@2
     inputs:
      targetType: 'inline'
      script: 'Start-Job -ScriptBlock {kubectl port-forward deployment/microservice 8085:8080};'
-    displayName: 'Port forward'
+    displayName: 'Port forward para el deployment de la imagen para disponibizarla para el load testing.' 
+    
